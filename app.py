@@ -17,12 +17,6 @@ sp_oauth = SpotifyOAuth(
 )
 
 # Write YouTube cookies from env var to /tmp/cookies.txt
-COOKIES_PATH = "/tmp/cookies.txt"
-cookies_blob = os.environ.get("YT_COOKIES")
-if cookies_blob:
-    with open(COOKIES_PATH, "w", encoding="utf-8") as f:
-        f.write(cookies_blob)
-
 # Dark HTML template
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -92,6 +86,9 @@ def callback():
     return html
 
 def download_song(query, filename):
+    # Path where Render mounts your secret file
+    COOKIES_PATH = "/etc/secrets/cookies.txt"
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': filename,
@@ -100,10 +97,14 @@ def download_song(query, filename):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'cookiefile': COOKIES_PATH
+        'cookiefile': COOKIES_PATH,   # use the secret file directly
+        'quiet': True,                # cleaner logs
+        'nocheckcertificate': True    # optional: avoids SSL quirks on some hosts
     }
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([f"ytsearch:{query}"])
+
 
 def embed_metadata(file_path, title, artist, album, cover_url):
     audio = MP3(file_path, ID3=ID3)
