@@ -134,11 +134,37 @@ def download_playlist(playlist_id):
         artist = track['artists'][0]['name']
         album = track['album']['name']
         cover_url = track['album']['images'][0]['url'] if track['album']['images'] else None
+        duration = track['duration_ms'] // 1000
+
+        # Find best YouTube match (no cookies)
+        ydl_opts = {'quiet': True, 'skip_download': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"ytsearch5:{title} {artist}", download=False)
+
+        # Pick closest duration match
+        best = min(info['entries'], key=lambda v: abs(v['duration'] - duration))
+        video_url = best['webpage_url']
 
         filename = os.path.join(folder, f"{title}.mp3")
-        download_song(f"{title} {artist}", filename)
+
+        # Download audio
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': filename,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'quiet': True
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+
+        # Embed metadata
         embed_metadata(filename, title, artist, album, cover_url)
 
+    # Package into ZIP
     zip_path = f"{folder}.zip"
     with zipfile.ZipFile(zip_path, 'w') as zipf:
         for root, _, files in os.walk(folder):
@@ -146,6 +172,7 @@ def download_playlist(playlist_id):
                 zipf.write(os.path.join(root, file), arcname=file)
 
     return send_file(zip_path, as_attachment=True, download_name=f"{playlist_name}.zip")
+
 
 if __name__ == "__main__":
     app.run(ssl_context=('cert.pem', 'key.pem'))
