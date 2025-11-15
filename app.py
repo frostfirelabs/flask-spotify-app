@@ -86,9 +86,6 @@ def callback():
     return html
 
 def download_song(query, filename):
-    # Path where Render mounts your secret file
-    COOKIES_PATH = "/etc/secrets/cookies.txt"
-
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': filename,
@@ -97,13 +94,23 @@ def download_song(query, filename):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'cookiefile': COOKIES_PATH,   # use the secret file directly
-        'quiet': True,                # cleaner logs
-        'nocheckcertificate': True    # optional: avoids SSL quirks on some hosts
+        # Reduce bot-like behavior
+        'quiet': True,
+        'noplaylist': True,  # avoid triggering playlist scraping
+        'http_headers': {
+            'User-Agent': (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        },
+        'sleep_interval': 2,   # wait between requests
+        'max_sleep_interval': 5
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([f"ytsearch:{query}"])
+        ydl.download([f"ytsearch1:{query}"])  # only grab the top result
+
 
 
 def embed_metadata(file_path, title, artist, album, cover_url):
