@@ -10,9 +10,9 @@ app = Flask(__name__)
 
 # Spotify OAuth setup
 sp_oauth = SpotifyOAuth(
-    client_id=os.environ.get("f0ab25b12248424792bdb4f9267d55e1"),
-    client_secret=os.environ.get("e506d3b1d7004be498bd89af3e0e2cd3"),
-    redirect_uri=os.environ.get("SPOTIFY_REDIRECT_URI", "https://flask-spotify-app-8jib.onrender.com/callback"),
+    client_id=os.environ.get("SPOTIPY_CLIENT_ID"),
+    client_secret=os.environ.get("SPOTIPY_CLIENT_SECRET"),
+    redirect_uri=os.environ.get("SPOTIPY_REDIRECT_URI", "https://flask-spotify-app-8jib.onrender.com/callback"),
     scope="playlist-read-private"
 )
 
