@@ -10,13 +10,21 @@ app = Flask(__name__)
 
 # Spotify OAuth setup
 sp_oauth = SpotifyOAuth(
-    client_id="f0ab25b12248424792bdb4f9267d55e1",
-    client_secret="e506d3b1d7004be498bd89af3e0e2cd3",
-    redirect_uri="https://flask-spotify-app-8jib.onrender.com/callback",
+    client_id=os.environ.get("SPOTIFY_CLIENT_ID"),
+    client_secret=os.environ.get("SPOTIFY_CLIENT_SECRET"),
+    redirect_uri=os.environ.get("SPOTIFY_REDIRECT_URI", "https://your-app.onrender.com/callback"),
     scope="playlist-read-private"
 )
 
-DARK_HTML = """
+# Write YouTube cookies from env var to /tmp/cookies.txt
+COOKIES_PATH = "/tmp/cookies.txt"
+cookies_blob = os.environ.get("YT_COOKIES")
+if cookies_blob:
+    with open(COOKIES_PATH, "w", encoding="utf-8") as f:
+        f.write(cookies_blob)
+
+# Dark HTML template
+INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,19 +43,10 @@ DARK_HTML = """
       text-decoration: none;
       font-weight: bold;
     }
-    a:hover {
-      text-decoration: underline;
-    }
-    h1, h2 {
-      margin-bottom: 20px;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      margin: 10px 0;
-    }
+    a:hover { text-decoration: underline; }
+    h1, h2 { margin-bottom: 20px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 10px 0; }
     .btn {
       background-color: #1db954;
       color: #fff;
@@ -57,9 +56,7 @@ DARK_HTML = """
       font-size: 16px;
       cursor: pointer;
     }
-    .btn:hover {
-      background-color: #1ed760;
-    }
+    .btn:hover { background-color: #1ed760; }
   </style>
 </head>
 <body>
@@ -71,7 +68,7 @@ DARK_HTML = """
 
 @app.route("/")
 def index():
-    return render_template_string(DARK_HTML)
+    return render_template_string(INDEX_HTML)
 
 @app.route("/login")
 def login():
@@ -84,14 +81,15 @@ def callback():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     playlists = sp.current_user_playlists()
 
-    playlist_html = """
-    <html><head><title>Your Playlists</title></head><body style="background:#121212;color:#e0e0e0;font-family:sans-serif;">
+    html = """
+    <html><head><title>Your Playlists</title></head>
+    <body style="background:#121212;color:#e0e0e0;font-family:sans-serif;">
     <h2>Your Playlists</h2><ul>
     """
     for p in playlists['items']:
-        playlist_html += f'<li>{p["name"]} - <a href="/download/{p["id"]}">Download</a></li>'
-    playlist_html += "</ul></body></html>"
-    return playlist_html
+        html += f'<li>{p["name"]} - <a href="/download/{p["id"]}">Download</a></li>'
+    html += "</ul></body></html>"
+    return html
 
 def download_song(query, filename):
     ydl_opts = {
@@ -101,7 +99,8 @@ def download_song(query, filename):
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
-        }]
+        }],
+        'cookiefile': COOKIES_PATH
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([f"ytsearch:{query}"])
@@ -125,7 +124,7 @@ def download_playlist(playlist_id):
     sp = spotipy.Spotify(auth_manager=sp_oauth)
     playlist = sp.playlist(playlist_id)
     playlist_name = playlist['name']
-    folder = os.path.join("downloads", playlist_name)
+    folder = os.path.join("/tmp", playlist_name)
     os.makedirs(folder, exist_ok=True)
 
     for item in playlist['tracks']['items']:
