@@ -12,7 +12,7 @@ app = Flask(__name__)
 sp_oauth = SpotifyOAuth(
     client_id="f0ab25b12248424792bdb4f9267d55e1",
     client_secret="e506d3b1d7004be498bd89af3e0e2cd3",
-    redirect_uri="https://localhost:5000/callback",
+    redirect_uri="https://flask-spotify-app-8jib.onrender.com/",
     scope="playlist-read-private"
 )
 
