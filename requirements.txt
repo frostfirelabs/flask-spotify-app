@@ -1,0 +1,8 @@
+flask
+spotipy
+gunicorn
+requests
+zipfile
+yt_dlp
+mutagen
+spotipy
